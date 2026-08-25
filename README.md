@@ -5,7 +5,8 @@ Gemini API 키만 등록하면 바로 사용할 수 있는 미니멀한 Next.js 
 ## 현재 구현된 것
 
 - 데스크톱·모바일 반응형 챗봇 UI
-- 사용자 메시지 입력과 대화 초기화
+- 여러 채팅방 생성·불러오기·삭제
+- 브라우저에 채팅방과 메시지를 자동 저장해 새로고침 후에도 복원
 - Gemini 대화 이력을 유지하는 `/api/chat` 서버 Route
 - 무료 티어를 지원하는 `gemini-3.5-flash-lite` 연동
 - API 키가 없을 때 고정된 설정 안내 표시
@@ -51,7 +52,7 @@ npm run build
 ## 주요 파일
 
 ```text
-src/app/page.tsx            # 챗봇 화면과 메시지 상태
+src/app/page.tsx            # 챗봇 화면과 채팅방 저장·관리 상태
 src/app/globals.css         # 흑백 편집형 디자인과 반응형 스타일
 src/app/api/chat/route.ts   # Gemini API 서버 호출
 .env.example                # 필요한 환경 변수 예시

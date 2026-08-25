@@ -132,7 +132,9 @@ textarea:focus-visible {
 
 .conversation-nav {
   flex: 1;
+  min-height: 0;
   margin-top: 38px;
+  overflow-y: auto;
 }
 
 .section-label,
@@ -149,24 +151,62 @@ textarea:focus-visible {
   min-height: 44px;
   align-items: center;
   margin-top: 10px;
-  padding: 0 12px;
+  padding: 0 6px 0 0;
+  overflow: hidden;
+  border-left: 2px solid transparent;
+  background: transparent;
+}
+
+.conversation-select {
+  display: flex;
+  min-width: 0;
+  min-height: 44px;
+  flex: 1;
+  align-items: center;
+  padding: 0 10px;
   overflow: hidden;
   border: 0;
-  border-radius: 0;
   background: transparent;
   font-size: 13px;
   text-align: left;
 }
 
-.conversation-item span:first-child {
+.conversation-select span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .conversation-item.is-active {
-  border-left: 2px solid var(--ink);
+  border-left-color: var(--ink);
   background: var(--cloud);
+}
+
+.delete-room-button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+
+.delete-room-button:hover {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.delete-room-button svg {
+  width: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
 }
 
 .main-panel {
