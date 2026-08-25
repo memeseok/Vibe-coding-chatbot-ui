@@ -201,6 +201,7 @@ export default function Home() {
                     </article>
                   ) : (
                     <article className="message assistant-message" key={message.id}>
+                      <span className="message-label">서초 Agent</span>
                       <p>{message.content}</p>
                     </article>
                   ),

@@ -80,8 +80,8 @@ textarea:focus-visible {
   align-items: center;
   gap: 10px;
   color: var(--ink);
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 900;
   letter-spacing: -0.02em;
   text-decoration: none;
 }
@@ -185,8 +185,8 @@ textarea:focus-visible {
 }
 
 .topbar-title {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
 }
 
 .icon-button {
@@ -281,7 +281,7 @@ textarea:focus-visible {
 }
 
 .assistant-message p {
-  margin: 0;
+  margin: 7px 0 0;
 }
 
 .notice-message {
