@@ -1,7 +1,44 @@
+import { GoogleGenAI, type Content } from "@google/genai";
 import { NextResponse } from "next/server";
 
+const MODEL = "gemini-3.5-flash-lite";
+
+type ChatHistoryItem = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+function toGeminiHistory(value: unknown): Content[] {
+  if (!Array.isArray(value)) return [];
+
+  const items = value.filter(
+    (item): item is ChatHistoryItem =>
+      typeof item === "object" &&
+      item !== null &&
+      (item.role === "user" || item.role === "assistant") &&
+      typeof item.content === "string" &&
+      Boolean(item.content.trim()),
+  );
+
+  const completedTurns: ChatHistoryItem[] = [];
+  for (const item of items) {
+    const expectedRole = completedTurns.length % 2 === 0 ? "user" : "assistant";
+    if (item.role === expectedRole) completedTurns.push(item);
+  }
+
+  if (completedTurns.at(-1)?.role === "user") completedTurns.pop();
+
+  return completedTurns.slice(-20).map((item) => ({
+    role: item.role === "assistant" ? "model" : "user",
+    parts: [{ text: item.content.slice(0, 8_000) }],
+  }));
+}
+
 export async function POST(request: Request) {
-  const body = (await request.json()) as { message?: unknown };
+  const body = (await request.json()) as {
+    message?: unknown;
+    history?: unknown;
+  };
 
   if (typeof body.message !== "string" || !body.message.trim()) {
     return NextResponse.json(
@@ -10,15 +47,31 @@ export async function POST(request: Request) {
     );
   }
 
-  // TODO: 학생 실습 영역
-  // 1. Gemini SDK를 설치합니다.
-  // 2. process.env.GEMINI_API_KEY를 서버에서 읽습니다.
-  // 3. body.message를 Gemini에 전달하고 생성된 답변을 반환합니다.
-  // API 키는 클라이언트 컴포넌트나 NEXT_PUBLIC_ 환경 변수에 넣지 마세요.
-  return NextResponse.json(
-    {
-      code: "GEMINI_NOT_CONNECTED",
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    return NextResponse.json({
+      code: "GEMINI_API_KEY_MISSING",
       message: "Gemini API 키를 설정해 주세요.",
-    },
-  );
+    });
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const chat = ai.chats.create({
+      model: MODEL,
+      history: toGeminiHistory(body.history),
+    });
+    const response = await chat.sendMessage({ message: body.message.trim() });
+    const message = response.text?.trim();
+
+    if (!message) throw new Error("Gemini returned an empty response");
+
+    return NextResponse.json({ message });
+  } catch {
+    console.error("Gemini API request failed");
+    return NextResponse.json({
+      code: "GEMINI_REQUEST_FAILED",
+      message: "Gemini API 요청에 실패했습니다.",
+    });
+  }
 }

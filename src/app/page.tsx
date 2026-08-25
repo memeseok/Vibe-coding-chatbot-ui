@@ -4,11 +4,11 @@ import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 
 type ChatMessage = {
   id: string;
-  role: "user" | "notice";
+  role: "user" | "assistant" | "notice";
   content: string;
 };
 
-const FALLBACK_NOTICE = "Gemini API 키를 설정해 주세요.";
+const FALLBACK_NOTICE = "요청에 실패했습니다.";
 
 function MenuIcon() {
   return (
@@ -78,15 +78,23 @@ export default function Home() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({
+          message,
+          history: messages
+            .filter((item) => item.role !== "notice")
+            .map((item) => ({ role: item.role, content: item.content })),
+        }),
       });
-      const data = (await response.json()) as { message?: string };
+      const data = (await response.json()) as {
+        code?: string;
+        message?: string;
+      };
 
       setMessages((current) => [
         ...current,
         {
           id: crypto.randomUUID(),
-          role: "notice",
+          role: data.code ? "notice" : "assistant",
           content: data.message ?? FALLBACK_NOTICE,
         },
       ]);
@@ -184,11 +192,15 @@ export default function Home() {
                       <span className="message-label">나</span>
                       <p>{message.content}</p>
                     </article>
-                  ) : (
+                  ) : message.role === "notice" ? (
                     <article className="message notice-message" key={message.id}>
                       <div className="notice-mark" aria-hidden="true">
                         !
                       </div>
+                      <p>{message.content}</p>
+                    </article>
+                  ) : (
+                    <article className="message assistant-message" key={message.id}>
                       <p>{message.content}</p>
                     </article>
                   ),
