@@ -252,8 +252,8 @@ textarea:focus-visible {
 
 .message p {
   margin: 7px 0 0;
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.75;
   overflow-wrap: anywhere;
 }
 
@@ -272,8 +272,12 @@ textarea:focus-visible {
 }
 
 .assistant-message {
+  width: fit-content;
   max-width: min(84%, 760px);
-  margin: 28px 0;
+  margin: 20px 0;
+  padding: 15px 20px 17px;
+  border-radius: 24px;
+  background: var(--cloud);
 }
 
 .assistant-message p {
@@ -492,6 +496,10 @@ textarea:focus-visible {
 
   .user-message {
     max-width: 90%;
+  }
+
+  .assistant-message {
+    max-width: 92%;
   }
 
   .composer-wrap {
