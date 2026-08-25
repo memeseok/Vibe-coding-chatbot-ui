@@ -8,8 +8,7 @@ type ChatMessage = {
   content: string;
 };
 
-const FALLBACK_NOTICE =
-  "Gemini API가 연결되지 않았습니다. .env.local에 GEMINI_API_KEY를 입력해 주세요.";
+const FALLBACK_NOTICE = "Gemini API 키를 설정해 주세요.";
 
 function MenuIcon() {
   return (
@@ -144,12 +143,14 @@ export default function Home() {
           새 대화
         </button>
 
-        <nav className="conversation-nav" aria-label="대화 목록">
-          <span className="section-label">대화</span>
-          <button className="conversation-item is-active" type="button">
-            <span>{messages.length ? messages[0].content : "새로운 대화"}</span>
-          </button>
-        </nav>
+        {messages.length > 0 ? (
+          <nav className="conversation-nav" aria-label="대화 목록">
+            <span className="section-label">대화</span>
+            <button className="conversation-item is-active" type="button">
+              <span>{messages[0].content}</span>
+            </button>
+          </nav>
+        ) : null}
       </aside>
 
       <main className="main-panel" id="top">
@@ -188,10 +189,7 @@ export default function Home() {
                       <div className="notice-mark" aria-hidden="true">
                         !
                       </div>
-                      <div>
-                        <span className="message-label">설정 필요</span>
-                        <p>{message.content}</p>
-                      </div>
+                      <p>{message.content}</p>
                     </article>
                   ),
                 )}

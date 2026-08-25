@@ -18,8 +18,7 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       code: "GEMINI_NOT_CONNECTED",
-      message:
-        "Gemini API가 연결되지 않았습니다. .env.local에 GEMINI_API_KEY를 입력해 주세요.",
+      message: "Gemini API 키를 설정해 주세요.",
     },
   );
 }

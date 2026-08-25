@@ -232,7 +232,7 @@ textarea:focus-visible {
   font-size: clamp(44px, 5.7vw, 78px);
   font-weight: 650;
   letter-spacing: -0.075em;
-  line-height: 0.88;
+  line-height: 1;
 }
 
 .conversation {
@@ -272,14 +272,18 @@ textarea:focus-visible {
 }
 
 .notice-message {
-  display: grid;
-  grid-template-columns: 36px 1fr;
+  display: flex;
   gap: 16px;
-  align-items: start;
+  align-items: center;
   margin-top: 28px;
   padding: 22px 0 24px;
   border-top: 1px solid var(--hairline);
   border-bottom: 1px solid var(--hairline);
+}
+
+.notice-message p {
+  margin: 0;
+  white-space: nowrap;
 }
 
 .notice-mark {
