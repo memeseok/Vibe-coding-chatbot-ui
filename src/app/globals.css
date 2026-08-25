@@ -193,6 +193,17 @@ textarea:focus-visible {
   border-radius: 50%;
   background: transparent;
   color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: background 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.conversation-item:hover .delete-room-button,
+.conversation-item:focus-within .delete-room-button {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .delete-room-button:hover {
@@ -207,6 +218,14 @@ textarea:focus-visible {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.6;
+}
+
+@media (hover: none) {
+  .delete-room-button {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
 }
 
 .main-panel {
