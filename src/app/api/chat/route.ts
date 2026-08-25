@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     {
       code: "GEMINI_NOT_CONNECTED",
       message:
-        "아직 Gemini API가 연결되지 않았습니다. 프로젝트 루트의 .env.local 파일에 GEMINI_API_KEY를 입력한 뒤, src/app/api/chat/route.ts에 Gemini API 호출을 구현해 주세요.",
+        "Gemini API가 연결되지 않았습니다. .env.local에 GEMINI_API_KEY를 입력해 주세요.",
     },
   );
 }

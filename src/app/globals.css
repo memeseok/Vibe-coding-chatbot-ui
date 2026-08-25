@@ -65,7 +65,7 @@ textarea:focus-visible {
 }
 
 .sidebar-top {
-  padding-bottom: 24px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--ink);
 }
 
@@ -96,14 +96,6 @@ textarea:focus-visible {
   color: var(--canvas);
   font-size: 12px;
   font-weight: 800;
-}
-
-.brand-caption {
-  margin: 13px 0 0 40px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
 }
 
 .new-chat-button {
@@ -139,13 +131,12 @@ textarea:focus-visible {
 }
 
 .conversation-nav {
+  flex: 1;
   margin-top: 38px;
 }
 
 .section-label,
-.eyebrow,
-.message-label,
-.empty-index {
+.message-label {
   color: var(--muted);
   font-size: 10px;
   font-weight: 750;
@@ -157,8 +148,6 @@ textarea:focus-visible {
   width: 100%;
   min-height: 44px;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   margin-top: 10px;
   padding: 0 12px;
   overflow: hidden;
@@ -180,61 +169,6 @@ textarea:focus-visible {
   background: var(--cloud);
 }
 
-.conversation-index {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.sidebar-guide {
-  margin-top: auto;
-  padding: 24px 0;
-  border-top: 1px solid var(--hairline);
-}
-
-.sidebar-guide p {
-  margin: 11px 0 13px;
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-.sidebar-guide code {
-  display: block;
-  overflow: hidden;
-  color: var(--muted);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.api-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 21px;
-  border-top: 1px solid var(--ink);
-  font-size: 10px;
-  font-weight: 750;
-  letter-spacing: 0.1em;
-  line-height: 1.45;
-}
-
-.api-status small {
-  display: block;
-  color: var(--muted);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border: 1px solid var(--ink);
-  border-radius: 50%;
-  background: var(--canvas);
-}
-
 .main-panel {
   display: flex;
   min-height: 100vh;
@@ -243,26 +177,16 @@ textarea:focus-visible {
 }
 
 .topbar {
-  display: flex;
+  display: none;
   min-height: 70px;
   align-items: center;
-  justify-content: space-between;
   margin: 0 clamp(24px, 5vw, 80px);
   border-bottom: 1px solid var(--ink);
 }
 
 .topbar-title {
-  display: none;
   font-size: 13px;
   font-weight: 800;
-}
-
-.topbar-meta {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
 }
 
 .icon-button {
@@ -295,69 +219,27 @@ textarea:focus-visible {
   flex: 1;
   flex-direction: column;
   align-self: center;
-  padding: 52px clamp(24px, 5vw, 80px) 40px;
+  padding: 72px clamp(24px, 5vw, 80px) 40px;
 }
 
 .chat-masthead {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.5fr);
-  gap: 48px;
-  align-items: end;
   padding-bottom: 32px;
   border-bottom: 1px solid var(--hairline);
 }
 
 .chat-masthead h1 {
-  margin: 14px 0 0;
+  margin: 0;
   font-size: clamp(44px, 5.7vw, 78px);
   font-weight: 650;
   letter-spacing: -0.075em;
   line-height: 0.88;
 }
 
-.chat-masthead p {
-  max-width: 270px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.65;
-}
-
 .conversation {
   display: flex;
-  min-height: 340px;
+  min-height: 420px;
   flex: 1;
   flex-direction: column;
-}
-
-.empty-state {
-  display: grid;
-  min-height: 360px;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.38fr);
-  grid-template-rows: auto 1fr;
-  gap: 18px 48px;
-  align-items: end;
-  padding: 48px 0 12px;
-}
-
-.empty-index {
-  grid-column: 1 / -1;
-  align-self: start;
-}
-
-.empty-state h2 {
-  margin: 0;
-  font-size: clamp(50px, 7.2vw, 94px);
-  font-weight: 750;
-  letter-spacing: -0.07em;
-  line-height: 0.82;
-}
-
-.empty-state p {
-  max-width: 260px;
-  margin: 0 0 5px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.65;
 }
 
 .message-list {
@@ -453,7 +335,7 @@ textarea:focus-visible {
   z-index: 10;
   width: min(100%, 1160px);
   align-self: center;
-  padding: 14px clamp(24px, 5vw, 80px) 22px;
+  padding: 14px clamp(24px, 5vw, 80px) 28px;
   background: linear-gradient(to bottom, transparent, var(--canvas) 20%);
 }
 
@@ -522,14 +404,6 @@ textarea:focus-visible {
   stroke-width: 1.7;
 }
 
-.composer-caption {
-  margin: 11px 0 0;
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.03em;
-  text-align: center;
-}
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -579,12 +453,11 @@ textarea:focus-visible {
   }
 
   .topbar-title {
-    display: inline;
     margin-left: 14px;
   }
 
   .topbar {
-    justify-content: flex-start;
+    display: flex;
   }
 }
 
@@ -599,31 +472,11 @@ textarea:focus-visible {
   }
 
   .chat-masthead {
-    display: block;
     padding-bottom: 24px;
   }
 
   .chat-masthead h1 {
     font-size: clamp(43px, 13vw, 60px);
-  }
-
-  .chat-masthead p {
-    margin-top: 24px;
-  }
-
-  .empty-state {
-    display: block;
-    min-height: 310px;
-    padding-top: 34px;
-  }
-
-  .empty-state h2 {
-    margin-top: 56px;
-    font-size: clamp(51px, 17vw, 74px);
-  }
-
-  .empty-state p {
-    margin-top: 28px;
   }
 
   .user-message {
@@ -645,9 +498,6 @@ textarea:focus-visible {
     flex-basis: 42px;
   }
 
-  .composer-caption {
-    font-size: 9px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

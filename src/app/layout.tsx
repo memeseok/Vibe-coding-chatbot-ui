@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vibe Chat — AI Chatbot Starter",
-  description: "Gemini API를 연결하기 전 단계의 바이브코딩 챗봇 UI",
+  title: "서초 AI",
+  description: "서초 AI 챗봇",
 };
 
 export default function RootLayout({

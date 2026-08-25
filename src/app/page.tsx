@@ -9,7 +9,7 @@ type ChatMessage = {
 };
 
 const FALLBACK_NOTICE =
-  "아직 Gemini API가 연결되지 않았습니다. .env.local에 GEMINI_API_KEY를 입력하고 API Route에 Gemini 호출을 구현해 주세요.";
+  "Gemini API가 연결되지 않았습니다. .env.local에 GEMINI_API_KEY를 입력해 주세요.";
 
 function MenuIcon() {
   return (
@@ -51,7 +51,9 @@ export default function Home() {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0) {
+      endRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isSending]);
 
   function startNewChat() {
@@ -122,9 +124,9 @@ export default function Home() {
       <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`}>
         <div className="sidebar-top">
           <div className="sidebar-brand-row">
-            <a className="brand" href="#top" aria-label="Vibe Chat 홈">
-              <span className="brand-mark">V</span>
-              <span>VIBE CHAT</span>
+            <a className="brand" href="#top" aria-label="서초 AI 홈">
+              <span className="brand-mark">S</span>
+              <span>서초 AI</span>
             </a>
             <button
               className="icon-button sidebar-close"
@@ -135,7 +137,6 @@ export default function Home() {
               <CloseIcon />
             </button>
           </div>
-          <p className="brand-caption">AI CHATBOT STARTER</p>
         </div>
 
         <button className="new-chat-button" type="button" onClick={startNewChat}>
@@ -144,26 +145,11 @@ export default function Home() {
         </button>
 
         <nav className="conversation-nav" aria-label="대화 목록">
-          <span className="section-label">TODAY</span>
+          <span className="section-label">대화</span>
           <button className="conversation-item is-active" type="button">
             <span>{messages.length ? messages[0].content : "새로운 대화"}</span>
-            <span className="conversation-index">01</span>
           </button>
         </nav>
-
-        <div className="sidebar-guide">
-          <span className="section-label">NEXT STEP</span>
-          <p>Gemini API를 연결해 챗봇의 첫 답변을 완성해 보세요.</p>
-          <code>src/app/api/chat/route.ts</code>
-        </div>
-
-        <div className="api-status">
-          <span className="status-dot" aria-hidden="true" />
-          <span>
-            GEMINI API
-            <small>NOT CONNECTED</small>
-          </span>
-        </div>
       </aside>
 
       <main className="main-panel" id="top">
@@ -176,48 +162,25 @@ export default function Home() {
           >
             <MenuIcon />
           </button>
-          <span className="topbar-title">VIBE CHAT</span>
-          <span className="topbar-meta">STARTER / 001</span>
+          <span className="topbar-title">서초 AI</span>
         </header>
 
         <section className="chat-stage">
           <header className="chat-masthead">
-            <div>
-              <span className="eyebrow">AI CHAT INTERFACE</span>
-              <h1>
-                무엇을
-                <br />
-                도와드릴까요?
-              </h1>
-            </div>
-            <p>
-              UI는 준비되었습니다. 이제 Gemini API를 연결하면 나만의 AI
-              챗봇이 완성됩니다.
-            </p>
+            <h1>
+              무엇을
+              <br />
+              도와드릴까요?
+            </h1>
           </header>
 
           <div className="conversation" aria-live="polite">
-            {messages.length === 0 ? (
-              <div className="empty-state">
-                <span className="empty-index">01 / READY TO BUILD</span>
-                <h2>
-                  ASK.
-                  <br />
-                  CONNECT.
-                  <br />
-                  CREATE.
-                </h2>
-                <p>
-                  아래 입력창에 메시지를 보내 보세요. 현재는 AI 답변 대신
-                  API 연결 안내가 표시됩니다.
-                </p>
-              </div>
-            ) : (
+            {messages.length > 0 ? (
               <div className="message-list">
                 {messages.map((message) =>
                   message.role === "user" ? (
                     <article className="message user-message" key={message.id}>
-                      <span className="message-label">YOU</span>
+                      <span className="message-label">나</span>
                       <p>{message.content}</p>
                     </article>
                   ) : (
@@ -226,7 +189,7 @@ export default function Home() {
                         !
                       </div>
                       <div>
-                        <span className="message-label">SETUP REQUIRED</span>
+                        <span className="message-label">설정 필요</span>
                         <p>{message.content}</p>
                       </div>
                     </article>
@@ -242,7 +205,7 @@ export default function Home() {
                 ) : null}
                 <div ref={endRef} />
               </div>
-            )}
+            ) : null}
           </div>
         </section>
 
@@ -269,9 +232,6 @@ export default function Home() {
               <ArrowIcon />
             </button>
           </form>
-          <p className="composer-caption">
-            현재는 Gemini API 연결 전 단계입니다 · Enter로 전송
-          </p>
         </footer>
       </main>
     </div>
