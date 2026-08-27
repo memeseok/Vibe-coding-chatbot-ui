@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import { GoogleLoginButton } from "@/app/google-login-button";
@@ -29,10 +30,10 @@ export default async function AdminLoginPage({
   return (
     <main className="admin-login-page">
       <section className="admin-login-card">
-        <a className="brand" href="/" aria-label="서초 AI 홈">
+        <Link className="brand" href="/" aria-label="서초 AI 홈">
           <span className="brand-mark">S</span>
           <span>서초 AI</span>
-        </a>
+        </Link>
         <span className="admin-kicker">ADMIN ACCESS</span>
         <h1>관리자 로그인</h1>
         <p>
@@ -50,9 +51,9 @@ export default async function AdminLoginPage({
                 다른 Google 계정으로 로그인
               </button>
             </form>
-            <a className="admin-back-link" href="/chat">
+            <Link className="admin-back-link" href="/chat">
               채팅으로 돌아가기
-            </a>
+            </Link>
           </div>
         ) : (
           <GoogleLoginButton
