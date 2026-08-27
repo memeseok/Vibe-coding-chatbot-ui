@@ -39,6 +39,8 @@ Tavily MCP는 Codex 같은 MCP 클라이언트에서 개발 작업에 사용하�
 
 Tavily API 키는 [Tavily Dashboard](https://app.tavily.com/)에서 발급한 뒤 로컬 `.env.local`과 Vercel의 Production 환경변수에 각각 등록합니다. 키를 추가하거나 변경한 Vercel 배포는 반드시 Redeploy해야 합니다.
 
+Vercel의 변수 값에는 `TAVILY_API_KEY=`, `Bearer`, 따옴표를 붙이지 않고 `tvly-`로 시작하는 실제 키 값만 넣는 것을 권장합니다. 서버는 흔한 접두사와 따옴표 입력을 정규화하지만, 마스킹된 화면 문자열이나 키 이름은 실제 API 키로 사용할 수 없습니다.
+
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
 
 ## Google OAuth 설정

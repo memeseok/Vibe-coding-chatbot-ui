@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import ChatClient, { type ChatUser } from "./chat-client";
 import { createClient } from "@/lib/supabase/server";
+import { getTavilyApiKey } from "@/lib/tavily";
 
 function getDisplayName(metadata: Record<string, unknown>, email: string) {
   for (const key of ["full_name", "name", "user_name"]) {
@@ -37,7 +38,7 @@ export default async function ChatPage() {
   return (
     <ChatClient
       user={chatUser}
-      webSearchAvailable={Boolean(process.env.TAVILY_API_KEY?.trim())}
+      webSearchAvailable={Boolean(getTavilyApiKey(process.env.TAVILY_API_KEY))}
     />
   );
 }

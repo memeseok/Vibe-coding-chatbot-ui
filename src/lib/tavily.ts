@@ -18,6 +18,56 @@ type TavilyResponse = {
   results?: unknown;
 };
 
+export class TavilySearchError extends Error {
+  status: number;
+
+  constructor(status: number, detail?: string) {
+    super(detail || `Tavily returned HTTP ${status}`);
+    this.name = "TavilySearchError";
+    this.status = status;
+  }
+}
+
+export function getTavilyApiKey(value: string | undefined) {
+  if (!value) return null;
+
+  let normalized = value.trim();
+
+  for (let index = 0; index < 3; index += 1) {
+    if (
+      normalized.length >= 2 &&
+      ((normalized.startsWith('"') && normalized.endsWith('"')) ||
+        (normalized.startsWith("'") && normalized.endsWith("'")))
+    ) {
+      normalized = normalized.slice(1, -1).trim();
+    }
+
+    normalized = normalized
+      .replace(/^TAVILY_API_KEY\s*=\s*/i, "")
+      .replace(/^Bearer\s+/i, "")
+      .trim();
+  }
+
+  return /^tvly-[^\s"']+$/.test(normalized) ? normalized : null;
+}
+
+async function getErrorDetail(response: Response) {
+  const text = await response.text().catch(() => "");
+  if (!text) return undefined;
+
+  try {
+    const payload = JSON.parse(text) as {
+      detail?: string | { error?: unknown };
+    };
+    if (typeof payload.detail === "string") return payload.detail;
+    if (typeof payload.detail?.error === "string") return payload.detail.error;
+  } catch {
+    // The status code remains sufficient when Tavily returns a non-JSON body.
+  }
+
+  return text.slice(0, 300);
+}
+
 function getSafeHttpUrl(value: unknown) {
   if (typeof value !== "string") return null;
 
@@ -54,7 +104,10 @@ export async function searchWeb(query: string, apiKey: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`Tavily returned HTTP ${response.status}`);
+    throw new TavilySearchError(
+      response.status,
+      await getErrorDetail(response),
+    );
   }
 
   const payload = (await response.json()) as TavilyResponse;
