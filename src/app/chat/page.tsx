@@ -34,5 +34,10 @@ export default async function ChatPage() {
     initial: displayName.slice(0, 1).toUpperCase(),
   };
 
-  return <ChatClient user={chatUser} />;
+  return (
+    <ChatClient
+      user={chatUser}
+      webSearchAvailable={Boolean(process.env.TAVILY_API_KEY?.trim())}
+    />
+  );
 }

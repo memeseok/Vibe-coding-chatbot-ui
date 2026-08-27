@@ -14,6 +14,13 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant" | "notice";
   content: string;
+  sources?: ChatSource[];
+  webSearchUsed?: boolean;
+};
+
+type ChatSource = {
+  title: string;
+  url: string;
 };
 
 type ChatRoom = {
@@ -39,6 +46,22 @@ function isChatMessage(value: unknown): value is ChatMessage {
   );
 }
 
+function isChatSource(value: unknown): value is ChatSource {
+  if (typeof value !== "object" || value === null) return false;
+  const source = value as Partial<ChatSource>;
+
+  if (typeof source.title !== "string" || typeof source.url !== "string") {
+    return false;
+  }
+
+  try {
+    const url = new URL(source.url);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function restoreChatRooms(value: unknown): ChatRoom[] {
   if (!Array.isArray(value)) return [];
 
@@ -55,7 +78,13 @@ function restoreChatRooms(value: unknown): ChatRoom[] {
         return [];
       }
 
-      const messages = room.messages.filter(isChatMessage);
+      const messages = room.messages.filter(isChatMessage).map((message) => ({
+        ...message,
+        sources: Array.isArray(message.sources)
+          ? message.sources.filter(isChatSource)
+          : undefined,
+        webSearchUsed: message.webSearchUsed === true,
+      }));
       if (messages.length === 0) return [];
 
       return [
@@ -111,11 +140,27 @@ function TrashIcon() {
   );
 }
 
-export default function ChatClient({ user }: { user: ChatUser }) {
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m16 16 4 4M8.5 11h5M11 8.5v5" />
+    </svg>
+  );
+}
+
+export default function ChatClient({
+  user,
+  webSearchAvailable,
+}: {
+  user: ChatUser;
+  webSearchAvailable: boolean;
+}) {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(webSearchAvailable);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [storageReady, setStorageReady] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -242,6 +287,7 @@ export default function ChatClient({ user }: { user: ChatUser }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
+          useWebSearch: webSearchEnabled,
           history: messages
             .filter((item) => item.role !== "notice")
             .map((item) => ({ role: item.role, content: item.content })),
@@ -250,12 +296,20 @@ export default function ChatClient({ user }: { user: ChatUser }) {
       const data = (await response.json()) as {
         code?: string;
         message?: string;
+        sources?: unknown;
+        webSearchUsed?: unknown;
       };
+
+      const sources = Array.isArray(data.sources)
+        ? data.sources.filter(isChatSource)
+        : undefined;
 
       appendMessageToRoom(roomId, {
         id: crypto.randomUUID(),
         role: data.code ? "notice" : "assistant",
         content: data.message ?? FALLBACK_NOTICE,
+        sources,
+        webSearchUsed: data.webSearchUsed === true,
       });
     } catch {
       appendMessageToRoom(roomId, {
@@ -398,8 +452,31 @@ export default function ChatClient({ user }: { user: ChatUser }) {
                     </article>
                   ) : (
                     <article className="message assistant-message" key={message.id}>
-                      <span className="message-label">서초 Agent</span>
+                      <div className="assistant-message-meta">
+                        <span className="message-label">서초 Agent</span>
+                        {message.webSearchUsed ? (
+                          <span className="search-badge">실시간 검색</span>
+                        ) : null}
+                      </div>
                       <p>{message.content}</p>
+                      {message.sources && message.sources.length > 0 ? (
+                        <div className="source-list">
+                          <strong>출처</strong>
+                          <ol>
+                            {message.sources.map((source, index) => (
+                              <li key={`${source.url}:${index}`}>
+                                <a
+                                  href={source.url}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                >
+                                  {source.title}
+                                </a>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      ) : null}
                     </article>
                   ),
                 )}
@@ -418,6 +495,25 @@ export default function ChatClient({ user }: { user: ChatUser }) {
         </section>
 
         <footer className="composer-wrap">
+          <div className="composer-tools">
+            <button
+              className={`web-search-toggle ${webSearchEnabled ? "is-active" : ""}`}
+              type="button"
+              aria-pressed={webSearchEnabled}
+              onClick={() => setWebSearchEnabled((enabled) => !enabled)}
+              disabled={isSending || !webSearchAvailable}
+            >
+              <SearchIcon />
+              실시간 검색
+            </button>
+            <span>
+              {!webSearchAvailable
+                ? "Tavily API 키를 설정하면 활성화됩니다."
+                : webSearchEnabled
+                ? "Tavily에서 최신 정보를 검색합니다."
+                : "웹 검색 없이 답변합니다."}
+            </span>
+          </div>
           <form className="composer" onSubmit={sendMessage}>
             <label className="sr-only" htmlFor="chat-input">
               메시지 입력

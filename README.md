@@ -10,6 +10,7 @@ Supabase Google OAuth로 보호되는 Next.js AI 챗봇입니다. 로그인하�
 - 서버에서 검증한 Google 사용자 이름·이메일 표시
 - 우측 상단 로그아웃과 랜딩 페이지 복귀
 - 인증되지 않은 `/api/chat` 요청 차단
+- Tavily 실시간 웹 검색 토글과 출처 링크 표시
 - 사용자별로 분리된 브라우저 채팅 기록
 - Vercel 배포 설정과 Node.js 22 런타임
 
@@ -27,11 +28,16 @@ npm run dev
 
 ```env
 GEMINI_API_KEY=Google_AI_Studio_API_KEY
+TAVILY_API_KEY=Tavily_API_KEY
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
 ```
 
-`GEMINI_API_KEY`는 서버에서만 사용합니다. Supabase Publishable key는 공개 클라이언트용이며 `service_role` 또는 Secret key를 브라우저 환경변수에 넣으면 안 됩니다.
+`GEMINI_API_KEY`와 `TAVILY_API_KEY`는 서버에서만 사용합니다. Supabase Publishable key는 공개 클라이언트용이며 `service_role` 또는 Secret key를 브라우저 환경변수에 넣으면 안 됩니다.
+
+Tavily MCP는 Codex 같은 MCP 클라이언트에서 개발 작업에 사용하는 연결입니다. Vercel에서 실행되는 웹사이트는 MCP 설정을 상속하지 않으므로, 채팅 Route Handler가 `TAVILY_API_KEY`로 Tavily Search API를 호출합니다. 키가 설정되어 있으면 채팅 화면의 **실시간 검색** 버튼이 기본 활성화되며, 검색 기반 답변에는 출처 링크가 함께 표시됩니다. 키가 없으면 검색 버튼만 비활성화되고 일반 채팅은 계속 사용할 수 있습니다.
+
+Tavily API 키는 [Tavily Dashboard](https://app.tavily.com/)에서 발급한 뒤 로컬 `.env.local`과 Vercel의 Production 환경변수에 각각 등록합니다. 키를 추가하거나 변경한 Vercel 배포는 반드시 Redeploy해야 합니다.
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
 
@@ -59,9 +65,10 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
 ## Vercel 배포
 
 1. 이 GitHub 저장소를 Vercel에 Import합니다.
-2. Vercel 프로젝트의 **Environment Variables**에 다음 세 값을 등록합니다.
+2. Vercel 프로젝트의 **Environment Variables**에 다음 네 값을 등록합니다.
 
    - `GEMINI_API_KEY`
+   - `TAVILY_API_KEY`
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
@@ -88,7 +95,8 @@ src/app/auth/callback/route.ts    # PKCE 인증 코드 교환
 src/app/auth/actions.ts           # 로그아웃 Server Action
 src/app/chat/page.tsx             # 보호된 채팅 페이지·사용자 조회
 src/app/chat/chat-client.tsx      # 채팅 UI와 사용자별 로컬 기록
-src/app/api/chat/route.ts         # 인증이 적용된 Gemini API Route
+src/app/api/chat/route.ts         # 인증·Tavily 검색이 적용된 Gemini API Route
+src/lib/tavily.ts                 # Tavily Search API와 출처 정규화
 src/lib/supabase/*                # 브라우저·서버·Proxy 클라이언트
 src/proxy.ts                      # 세션 갱신과 라우트 보호
 ```
