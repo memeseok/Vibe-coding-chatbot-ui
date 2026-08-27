@@ -1,38 +1,75 @@
 # 서초 AI
 
-Gemini API 키만 등록하면 바로 사용할 수 있는 미니멀한 Next.js 챗봇입니다.
+Supabase Google OAuth로 보호되는 Next.js AI 챗봇입니다. 로그인하지 않은 사용자는 랜딩 페이지에 머물고, 인증된 사용자만 `/chat`과 `/api/chat`을 이용할 수 있습니다.
 
-## 현재 구현된 것
+## 구현 기능
 
-- 데스크톱·모바일 반응형 챗봇 UI
-- 여러 채팅방 생성·불러오기·삭제
-- 브라우저에 채팅방과 메시지를 자동 저장해 새로고침 후에도 복원
-- Gemini 대화 이력을 유지하는 `/api/chat` 서버 Route
-- 무료 티어를 지원하는 `gemini-3.5-flash-lite` 연동
-- API 키가 없을 때 고정된 설정 안내 표시
-- API 키가 브라우저에 노출되지 않는 서버 Route 구조
+- 랜딩 페이지의 Google 로그인·회원가입
+- Supabase SSR 쿠키 세션과 OAuth PKCE 콜백
+- 로그인 사용자만 접근 가능한 `/chat`
+- 서버에서 검증한 Google 사용자 이름·이메일 표시
+- 우측 상단 로그아웃과 랜딩 페이지 복귀
+- 인증되지 않은 `/api/chat` 요청 차단
+- 사용자별로 분리된 브라우저 채팅 기록
+- Vercel 배포 설정과 Node.js 22 런타임
 
 ## 로컬 실행
 
-Node.js 20.9 이상이 필요합니다.
+Node.js 22 이상이 필요합니다.
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
-
-## Gemini API 키 설정
-
-Google AI Studio에서 새 API 키를 발급한 뒤 `.env` 또는 `.env.local`에 입력합니다. 개인 키는 로컬 개발에서 우선순위가 높은 `.env.local` 사용을 권장합니다.
+`.env.local`에 아래 값을 입력합니다.
 
 ```env
-GEMINI_API_KEY=새로_발급받은_키
+GEMINI_API_KEY=Google_AI_Studio_API_KEY
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
 ```
 
-환경변수를 변경했다면 개발 서버를 재시작합니다. `.env`와 `.env.local`은 Git에 올라가지 않습니다. 키에 `NEXT_PUBLIC_` 접두사를 붙이거나 클라이언트 컴포넌트에서 직접 사용하지 마세요.
+`GEMINI_API_KEY`는 서버에서만 사용합니다. Supabase Publishable key는 공개 클라이언트용이며 `service_role` 또는 Secret key를 브라우저 환경변수에 넣으면 안 됩니다.
+
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
+
+## Google OAuth 설정
+
+대상 Supabase 프로젝트에서는 Google Provider가 활성화되어 있어야 합니다.
+
+1. Google Cloud Console에서 Web OAuth Client를 만듭니다.
+2. Google의 **Authorized redirect URI**에 다음 Supabase 콜백을 등록합니다.
+
+   ```text
+   https://typcwfbbvlcgutlmhjwq.supabase.co/auth/v1/callback
+   ```
+
+3. Supabase Dashboard의 **Authentication → Providers → Google**에 Client ID와 Client Secret을 등록합니다.
+4. Supabase Dashboard의 **Authentication → URL Configuration**에 다음 URL을 허용합니다.
+
+   ```text
+   http://localhost:3000/auth/callback
+   https://YOUR_VERCEL_DOMAIN/auth/callback
+   ```
+
+배포 후 `Site URL`을 실제 Vercel 도메인으로 지정하는 것을 권장합니다.
+
+## Vercel 배포
+
+1. 이 GitHub 저장소를 Vercel에 Import합니다.
+2. Vercel 프로젝트의 **Environment Variables**에 다음 세 값을 등록합니다.
+
+   - `GEMINI_API_KEY`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+3. Production, Preview, Development 환경에 필요한 범위를 선택합니다.
+4. 배포 후 실제 도메인의 `/auth/callback`을 Supabase Redirect URLs에 추가합니다.
+5. Redeploy한 뒤 Google 로그인, `/chat` 보호, 로그아웃을 확인합니다.
+
+`vercel.json`, `.nvmrc`, `package.json`의 Node 엔진 설정이 포함되어 있습니다.
 
 ## 확인 명령
 
@@ -42,18 +79,16 @@ npm run typecheck
 npm run build
 ```
 
-## Vercel 배포
-
-1. 본인 GitHub 저장소로 코드를 올립니다.
-2. Vercel에서 해당 저장소를 Import합니다.
-3. Vercel 프로젝트의 Environment Variables에 `GEMINI_API_KEY`를 등록합니다.
-4. 배포를 실행합니다.
-
 ## 주요 파일
 
 ```text
-src/app/page.tsx            # 챗봇 화면과 채팅방 저장·관리 상태
-src/app/globals.css         # 흑백 편집형 디자인과 반응형 스타일
-src/app/api/chat/route.ts   # Gemini API 서버 호출
-.env.example                # 필요한 환경 변수 예시
+src/app/page.tsx                  # 로그인 랜딩 페이지
+src/app/google-login-button.tsx   # Google OAuth 시작 버튼
+src/app/auth/callback/route.ts    # PKCE 인증 코드 교환
+src/app/auth/actions.ts           # 로그아웃 Server Action
+src/app/chat/page.tsx             # 보호된 채팅 페이지·사용자 조회
+src/app/chat/chat-client.tsx      # 채팅 UI와 사용자별 로컬 기록
+src/app/api/chat/route.ts         # 인증이 적용된 Gemini API Route
+src/lib/supabase/*                # 브라우저·서버·Proxy 클라이언트
+src/proxy.ts                      # 세션 갱신과 라우트 보호
 ```
