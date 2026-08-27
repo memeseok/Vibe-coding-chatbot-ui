@@ -26,7 +26,13 @@ function GoogleIcon() {
   );
 }
 
-export function GoogleLoginButton() {
+export function GoogleLoginButton({
+  nextPath = "/chat",
+  label = "Google로 계속하기",
+}: {
+  nextPath?: string;
+  label?: string;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +44,7 @@ export function GoogleLoginButton() {
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/chat`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         queryParams: {
           prompt: "select_account",
         },
@@ -60,7 +66,7 @@ export function GoogleLoginButton() {
         disabled={isLoading}
       >
         <GoogleIcon />
-        <span>{isLoading ? "Google로 이동 중..." : "Google로 계속하기"}</span>
+        <span>{isLoading ? "Google로 이동 중..." : label}</span>
       </button>
       {error ? <p className="login-error">{error}</p> : null}
     </div>

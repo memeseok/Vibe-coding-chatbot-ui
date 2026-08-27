@@ -33,6 +33,7 @@ export default async function ChatPage() {
     displayName,
     email,
     initial: displayName.slice(0, 1).toUpperCase(),
+    isAdmin: user.app_metadata?.app_role === "admin",
   };
 
   return (

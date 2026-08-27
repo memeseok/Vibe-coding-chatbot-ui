@@ -1,13 +1,24 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { signOut } from "@/app/auth/actions";
+import { createClient } from "@/lib/supabase/client";
+import type { Database, Json } from "@/lib/supabase/database.types";
 
 export type ChatUser = {
   id: string;
   displayName: string;
   email: string;
   initial: string;
+  isAdmin: boolean;
 };
 
 type ChatMessage = {
@@ -32,6 +43,8 @@ type ChatRoom = {
 
 const CHAT_STORAGE_KEY_PREFIX = "seocho-ai-chat-rooms-v2";
 const FALLBACK_NOTICE = "요청에 실패했습니다.";
+const HISTORY_ERROR =
+  "대화 기록을 저장하거나 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 
 function isChatMessage(value: unknown): value is ChatMessage {
   if (typeof value !== "object" || value === null) return false;
@@ -90,14 +103,132 @@ function restoreChatRooms(value: unknown): ChatRoom[] {
       return [
         {
           id: room.id,
-          title: room.title,
+          title: room.title.slice(0, 120),
           messages,
           updatedAt:
-            typeof room.updatedAt === "number" ? room.updatedAt : Date.now(),
+            typeof room.updatedAt === "number" &&
+            Number.isFinite(room.updatedAt)
+              ? room.updatedAt
+              : Date.now(),
         },
       ];
     })
     .sort((first, second) => second.updatedAt - first.updatedAt);
+}
+
+function parseSources(value: Json): ChatSource[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const sources = value.filter(isChatSource);
+  return sources.length > 0 ? sources : undefined;
+}
+
+async function readChatRooms(
+  supabase: SupabaseClient<Database>,
+): Promise<ChatRoom[]> {
+  const { data: roomRows, error: roomsError } = await supabase
+    .from("chat_rooms")
+    .select("id, title, updated_at")
+    .order("updated_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(100);
+
+  if (roomsError) throw roomsError;
+  if (!roomRows || roomRows.length === 0) return [];
+
+  const roomIds = roomRows.map((room) => room.id);
+  const { data: messageRows, error: messagesError } = await supabase
+    .from("chat_messages")
+    .select(
+      "id, room_id, role, content, sources, web_search_used, created_at",
+    )
+    .in("room_id", roomIds)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (messagesError) throw messagesError;
+
+  const messagesByRoom = new Map<string, ChatMessage[]>();
+  for (const row of messageRows ?? []) {
+    if (
+      row.role !== "user" &&
+      row.role !== "assistant" &&
+      row.role !== "notice"
+    ) {
+      continue;
+    }
+
+    const roomMessages = messagesByRoom.get(row.room_id) ?? [];
+    roomMessages.push({
+      id: row.id,
+      role: row.role,
+      content: row.content,
+      sources: parseSources(row.sources),
+      webSearchUsed: row.web_search_used,
+    });
+    messagesByRoom.set(row.room_id, roomMessages);
+  }
+
+  return roomRows.map((room) => ({
+    id: room.id,
+    title: room.title,
+    messages: messagesByRoom.get(room.id) ?? [],
+    updatedAt: Date.parse(room.updated_at),
+  }));
+}
+
+async function migrateLocalHistory(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  storageKey: string,
+) {
+  const stored = localStorage.getItem(storageKey);
+  if (!stored) return false;
+
+  let parsed: { rooms?: unknown };
+  try {
+    parsed = JSON.parse(stored) as { rooms?: unknown };
+  } catch {
+    return false;
+  }
+  const localRooms = restoreChatRooms(parsed.rooms);
+  if (localRooms.length === 0) return false;
+
+  const { error: roomsError } = await supabase.from("chat_rooms").upsert(
+    localRooms.map((room) => ({
+      id: room.id,
+      user_id: userId,
+      title: room.title,
+      created_at: new Date(room.updatedAt).toISOString(),
+      updated_at: new Date(room.updatedAt).toISOString(),
+    })),
+    { onConflict: "id", ignoreDuplicates: true },
+  );
+
+  if (roomsError) throw roomsError;
+
+  const messageRows = localRooms.flatMap((room) =>
+    room.messages.map((message, index) => ({
+      id: message.id,
+      room_id: room.id,
+      user_id: userId,
+      role: message.role,
+      content: message.content.slice(0, 32000),
+      sources: (message.sources ?? []) as Json,
+      web_search_used: message.webSearchUsed === true,
+      created_at: new Date(
+        room.updatedAt - (room.messages.length - index) * 10,
+      ).toISOString(),
+    })),
+  );
+
+  const { error: messagesError } = await supabase
+    .from("chat_messages")
+    .upsert(messageRows, { onConflict: "id", ignoreDuplicates: true });
+
+  if (messagesError) throw messagesError;
+
+  localStorage.removeItem(storageKey);
+  return true;
 }
 
 function MenuIcon() {
@@ -156,13 +287,17 @@ export default function ChatClient({
   user: ChatUser;
   webSearchAvailable: boolean;
 }) {
+  const supabase = useMemo(() => createClient(), []);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(webSearchAvailable);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [storageReady, setStorageReady] = useState(false);
+  const [historyStatus, setHistoryStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const chatStorageKey = `${CHAT_STORAGE_KEY_PREFIX}:${user.id}`;
 
@@ -170,42 +305,44 @@ export default function ChatClient({
   const messages = activeRoom?.messages ?? [];
 
   useEffect(() => {
-    const restoreStorage = window.setTimeout(() => {
+    let cancelled = false;
+
+    async function loadHistory() {
       try {
-        const stored = localStorage.getItem(chatStorageKey);
-        if (!stored) return;
+        let storedRooms = await readChatRooms(supabase);
+        if (storedRooms.length === 0) {
+          try {
+            const migrated = await migrateLocalHistory(
+              supabase,
+              user.id,
+              chatStorageKey,
+            );
+            if (migrated) storedRooms = await readChatRooms(supabase);
+          } catch {
+            if (!cancelled) {
+              setHistoryError(
+                "기존 브라우저 대화 기록을 이전하지 못했습니다. 새 대화는 정상적으로 저장됩니다.",
+              );
+            }
+          }
+        }
 
-        const saved = JSON.parse(stored) as {
-          rooms?: unknown;
-          activeRoomId?: unknown;
-        };
-        const restoredRooms = restoreChatRooms(saved.rooms);
-
-        setRooms(restoredRooms);
-        setActiveRoomId(
-          typeof saved.activeRoomId === "string" &&
-            restoredRooms.some((room) => room.id === saved.activeRoomId)
-            ? saved.activeRoomId
-            : null,
-        );
+        if (cancelled) return;
+        setRooms(storedRooms);
+        setActiveRoomId(storedRooms[0]?.id ?? null);
+        setHistoryStatus("ready");
       } catch {
-        setRooms([]);
-        setActiveRoomId(null);
-      } finally {
-        setStorageReady(true);
+        if (cancelled) return;
+        setHistoryStatus("error");
+        setHistoryError(HISTORY_ERROR);
       }
-    }, 0);
+    }
 
-    return () => window.clearTimeout(restoreStorage);
-  }, [chatStorageKey]);
-
-  useEffect(() => {
-    if (!storageReady) return;
-    localStorage.setItem(
-      chatStorageKey,
-      JSON.stringify({ rooms, activeRoomId }),
-    );
-  }, [activeRoomId, chatStorageKey, rooms, storageReady]);
+    void loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [chatStorageKey, supabase, user.id]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -228,6 +365,37 @@ export default function ChatClient({
     });
   }
 
+  async function persistMessage(
+    roomId: string,
+    roomTitle: string,
+    message: ChatMessage,
+  ) {
+    const updatedAt = new Date().toISOString();
+    const { error: roomError } = await supabase.from("chat_rooms").upsert(
+      {
+        id: roomId,
+        user_id: user.id,
+        title: roomTitle.slice(0, 120),
+        updated_at: updatedAt,
+      },
+      { onConflict: "id" },
+    );
+
+    if (roomError) throw roomError;
+
+    const { error: messageError } = await supabase.from("chat_messages").insert({
+      id: message.id,
+      room_id: roomId,
+      user_id: user.id,
+      role: message.role,
+      content: message.content.slice(0, 32000),
+      sources: (message.sources ?? []) as Json,
+      web_search_used: message.webSearchUsed === true,
+    });
+
+    if (messageError) throw messageError;
+  }
+
   function startNewChat() {
     setActiveRoomId(null);
     setPrompt("");
@@ -240,13 +408,27 @@ export default function ChatClient({
     setSidebarOpen(false);
   }
 
-  function deleteRoom(roomId: string) {
+  async function deleteRoom(roomId: string) {
+    const previousRooms = rooms;
+    const previousActiveRoomId = activeRoomId;
     const remainingRooms = rooms.filter((room) => room.id !== roomId);
     setRooms(remainingRooms);
+    setHistoryError(null);
 
     if (activeRoomId === roomId) {
       setActiveRoomId(remainingRooms[0]?.id ?? null);
       setPrompt("");
+    }
+
+    const { error } = await supabase
+      .from("chat_rooms")
+      .delete()
+      .eq("id", roomId);
+
+    if (error) {
+      setRooms(previousRooms);
+      setActiveRoomId(previousActiveRoomId);
+      setHistoryError(HISTORY_ERROR);
     }
   }
 
@@ -254,9 +436,10 @@ export default function ChatClient({
     event.preventDefault();
     const message = prompt.trim();
 
-    if (!message || isSending) return;
+    if (!message || isSending || historyStatus === "loading") return;
 
     const roomId = activeRoomId ?? crypto.randomUUID();
+    const roomTitle = activeRoom?.title ?? message.slice(0, 60);
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -269,7 +452,7 @@ export default function ChatClient({
       setRooms((current) => [
         {
           id: roomId,
-          title: message.slice(0, 60),
+          title: roomTitle,
           messages: [userMessage],
           updatedAt: Date.now(),
         },
@@ -280,8 +463,13 @@ export default function ChatClient({
 
     setPrompt("");
     setIsSending(true);
+    setHistoryError(null);
+    let userMessageSaved = false;
 
     try {
+      await persistMessage(roomId, roomTitle, userMessage);
+      userMessageSaved = true;
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -303,20 +491,37 @@ export default function ChatClient({
       const sources = Array.isArray(data.sources)
         ? data.sources.filter(isChatSource)
         : undefined;
-
-      appendMessageToRoom(roomId, {
+      const reply: ChatMessage = {
         id: crypto.randomUUID(),
         role: data.code ? "notice" : "assistant",
         content: data.message ?? FALLBACK_NOTICE,
         sources,
         webSearchUsed: data.webSearchUsed === true,
-      });
+      };
+
+      appendMessageToRoom(roomId, reply);
+
+      try {
+        await persistMessage(roomId, roomTitle, reply);
+      } catch {
+        setHistoryError("답변은 표시했지만 기록 저장에 실패했습니다.");
+      }
     } catch {
-      appendMessageToRoom(roomId, {
+      const notice: ChatMessage = {
         id: crypto.randomUUID(),
         role: "notice",
-        content: FALLBACK_NOTICE,
-      });
+        content: userMessageSaved ? FALLBACK_NOTICE : HISTORY_ERROR,
+      };
+      appendMessageToRoom(roomId, notice);
+      setHistoryError(userMessageSaved ? null : HISTORY_ERROR);
+
+      if (userMessageSaved) {
+        try {
+          await persistMessage(roomId, roomTitle, notice);
+        } catch {
+          setHistoryError(HISTORY_ERROR);
+        }
+      }
     } finally {
       setIsSending(false);
     }
@@ -361,7 +566,9 @@ export default function ChatClient({
           새 대화
         </button>
 
-        {rooms.length > 0 ? (
+        {historyStatus === "loading" ? (
+          <p className="history-status">대화 기록을 불러오는 중...</p>
+        ) : rooms.length > 0 ? (
           <nav className="conversation-nav" aria-label="대화 목록">
             <span className="section-label">대화</span>
             {rooms.map((room) => (
@@ -383,14 +590,16 @@ export default function ChatClient({
                   className="delete-room-button"
                   type="button"
                   aria-label={`${room.title} 삭제`}
-                  onClick={() => deleteRoom(room.id)}
+                  onClick={() => void deleteRoom(room.id)}
                 >
                   <TrashIcon />
                 </button>
               </div>
             ))}
           </nav>
-        ) : null}
+        ) : (
+          <p className="history-status">저장된 대화가 없습니다.</p>
+        )}
       </aside>
 
       <main className="main-panel" id="top">
@@ -417,6 +626,11 @@ export default function ChatClient({
                 <small>{user.email}</small>
               </span>
             </div>
+            {user.isAdmin ? (
+              <a className="admin-link" href="/admin">
+                관리자
+              </a>
+            ) : null}
             <form action={signOut}>
               <button className="logout-button" type="submit">
                 로그아웃
@@ -433,6 +647,12 @@ export default function ChatClient({
               도와드릴까요?
             </h1>
           </header>
+
+          {historyError ? (
+            <p className="chat-history-error" role="alert">
+              {historyError}
+            </p>
+          ) : null}
 
           <div className="conversation" aria-live="polite">
             {messages.length > 0 ? (
@@ -451,7 +671,10 @@ export default function ChatClient({
                       <p>{message.content}</p>
                     </article>
                   ) : (
-                    <article className="message assistant-message" key={message.id}>
+                    <article
+                      className="message assistant-message"
+                      key={message.id}
+                    >
                       <div className="assistant-message-meta">
                         <span className="message-label">서초 Agent</span>
                         {message.webSearchUsed ? (
@@ -510,8 +733,8 @@ export default function ChatClient({
               {!webSearchAvailable
                 ? "Tavily API 키를 설정하면 활성화됩니다."
                 : webSearchEnabled
-                ? "Tavily에서 최신 정보를 검색합니다."
-                : "웹 검색 없이 답변합니다."}
+                  ? "Tavily에서 최신 정보를 검색합니다."
+                  : "웹 검색 없이 답변합니다."}
             </span>
           </div>
           <form className="composer" onSubmit={sendMessage}>
@@ -525,13 +748,16 @@ export default function ChatClient({
               onChange={(event) => setPrompt(event.target.value)}
               onKeyDown={handleComposerKeyDown}
               placeholder="메시지를 입력하세요"
-              disabled={isSending}
+              maxLength={8000}
+              disabled={isSending || historyStatus === "loading"}
             />
             <button
               className="send-button"
               type="submit"
               aria-label="메시지 보내기"
-              disabled={!prompt.trim() || isSending}
+              disabled={
+                !prompt.trim() || isSending || historyStatus === "loading"
+              }
             >
               <ArrowIcon />
             </button>

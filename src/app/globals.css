@@ -137,6 +137,13 @@ textarea:focus-visible {
   overflow-y: auto;
 }
 
+.history-status {
+  margin: 32px 6px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .section-label,
 .message-label {
   color: var(--muted);
@@ -343,6 +350,26 @@ textarea:focus-visible {
 .logout-button:hover {
   background: var(--ink);
   color: var(--canvas);
+}
+
+.admin-link,
+.admin-back-link {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.chat-history-error {
+  margin: 18px 0 0;
+  padding: 12px 15px;
+  border: 1px solid #d8b6b6;
+  border-radius: 12px;
+  background: #fff7f7;
+  color: #8e2525;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .chat-stage {
@@ -680,6 +707,261 @@ textarea:focus-visible {
   letter-spacing: 0.13em;
 }
 
+.admin-login-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--cloud);
+}
+
+.admin-login-card {
+  width: min(100%, 520px);
+  padding: clamp(32px, 6vw, 58px);
+  border: 1px solid var(--ink);
+  background: var(--canvas);
+}
+
+.admin-kicker {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.admin-login-card .admin-kicker {
+  margin-top: 54px;
+}
+
+.admin-login-card h1 {
+  margin: 12px 0 0;
+  font-size: clamp(38px, 7vw, 58px);
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.admin-login-card > p {
+  margin: 22px 0 32px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.admin-login-actions {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-login-actions form,
+.admin-login-actions button {
+  width: 100%;
+}
+
+.admin-access-error {
+  margin: 0;
+  color: #8e2525;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admin-page {
+  width: min(100%, 1280px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 48px clamp(24px, 5vw, 72px) 80px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.admin-header h1 {
+  margin: 10px 0 0;
+  font-size: clamp(38px, 6vw, 72px);
+  letter-spacing: -0.065em;
+  line-height: 1;
+}
+
+.admin-header p {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 20px;
+}
+
+.admin-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 26px 0 0;
+  border: 1px solid var(--hairline);
+}
+
+.admin-summary > div {
+  display: grid;
+  gap: 5px;
+  min-height: 108px;
+  align-content: center;
+  padding: 20px 26px;
+}
+
+.admin-summary > div + div {
+  border-left: 1px solid var(--hairline);
+}
+
+.admin-summary strong {
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.admin-summary span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-user-list {
+  display: grid;
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.admin-user-card {
+  border: 1px solid var(--ink);
+}
+
+.admin-user-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 26px;
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.admin-user-card > header h2 {
+  margin: 7px 0 0;
+  font-size: 22px;
+}
+
+.admin-user-card > header p {
+  margin: 5px 0 0;
+  color: #b8b8b8;
+  font-size: 12px;
+}
+
+.admin-user-card > header > span {
+  color: #b8b8b8;
+  font-size: 11px;
+}
+
+.admin-room-list {
+  padding: 0 26px;
+}
+
+.admin-room + .admin-room {
+  border-top: 1px solid var(--hairline);
+}
+
+.admin-room summary {
+  display: grid;
+  gap: 6px;
+  padding: 21px 0;
+  cursor: pointer;
+  list-style-position: outside;
+}
+
+.admin-room summary span {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.admin-room summary small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.admin-message-list {
+  display: grid;
+  gap: 12px;
+  padding: 0 0 26px;
+}
+
+.admin-message {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--cloud);
+}
+
+.admin-message-user {
+  margin-left: clamp(20px, 8vw, 120px);
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.admin-message header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-message header strong,
+.admin-message header span,
+.admin-message > small {
+  font-size: 10px;
+}
+
+.admin-message header span,
+.admin-message > small {
+  color: var(--muted);
+}
+
+.admin-message-user header span {
+  color: #aaa;
+}
+
+.admin-message p {
+  margin: 9px 0 0;
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.admin-message > small {
+  display: block;
+  margin-top: 10px;
+}
+
+.admin-empty-state {
+  padding: 64px 24px;
+  border: 1px solid var(--hairline);
+  text-align: center;
+}
+
+.admin-empty-state h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.admin-empty-state p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .landing-nav-note,
 .landing-footer {
   color: var(--muted);
@@ -854,6 +1136,42 @@ textarea:focus-visible {
   .logout-button {
     min-height: 34px;
     padding: 0 12px;
+  }
+
+  .admin-link {
+    display: none;
+  }
+
+  .admin-page {
+    padding: 28px 16px 56px;
+  }
+
+  .admin-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-summary > div {
+    min-height: 84px;
+  }
+
+  .admin-summary > div + div {
+    border-top: 1px solid var(--hairline);
+    border-left: 0;
+  }
+
+  .admin-user-card > header,
+  .admin-room-list {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .admin-message-user {
+    margin-left: 16px;
   }
 
   .chat-stage {

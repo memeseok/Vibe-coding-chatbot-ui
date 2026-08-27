@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "./database.types";
 
 function copySessionCookies(source: NextResponse, target: NextResponse) {
   source.cookies.getAll().forEach((cookie) => target.cookies.set(cookie));
@@ -22,28 +23,32 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet, headers) {
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
+  const supabase = createServerClient<Database>(
+    supabaseUrl,
+    supabasePublishableKey,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
 
-        supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({ request });
 
-        cookiesToSet.forEach(({ name, value, options }) => {
-          supabaseResponse.cookies.set(name, value, options);
-        });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            supabaseResponse.cookies.set(name, value, options);
+          });
 
-        Object.entries(headers).forEach(([name, value]) => {
-          supabaseResponse.headers.set(name, value);
-        });
+          Object.entries(headers).forEach(([name, value]) => {
+            supabaseResponse.headers.set(name, value);
+          });
+        },
       },
     },
-  });
+  );
 
   // Keep this call immediately after client creation so token refresh stays reliable.
   const { data } = await supabase.auth.getClaims();
@@ -53,6 +58,20 @@ export async function updateSession(request: NextRequest) {
   if (!isAuthenticated && pathname.startsWith("/chat")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
+    url.search = "";
+    return copySessionCookies(
+      supabaseResponse,
+      NextResponse.redirect(url),
+    );
+  }
+
+  if (
+    !isAuthenticated &&
+    pathname.startsWith("/admin") &&
+    pathname !== "/admin/login"
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/login";
     url.search = "";
     return copySessionCookies(
       supabaseResponse,
