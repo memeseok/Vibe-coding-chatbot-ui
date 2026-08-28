@@ -91,7 +91,9 @@ export async function searchWeb(query: string, apiKey: string) {
     body: JSON.stringify({
       query,
       topic: "general",
-      search_depth: "fast",
+      // Tavily rejects safe_search with fast and ultra-fast search depths.
+      // Basic has the same one-credit cost while keeping safe search enabled.
+      search_depth: "basic",
       chunks_per_source: 2,
       max_results: MAX_RESULTS,
       include_answer: false,

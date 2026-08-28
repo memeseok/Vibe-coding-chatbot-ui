@@ -35,7 +35,7 @@ function getTavilyErrorResponse(error: unknown) {
       return {
         code: "TAVILY_BAD_REQUEST",
         message:
-          "Tavily가 검색 요청을 거부했습니다. 질문을 바꿔 다시 시도해 주세요.",
+          "실시간 검색 요청 설정에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
         status: 502,
       };
     }
